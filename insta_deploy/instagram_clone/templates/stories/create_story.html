@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Add Story · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap" style="max-width:420px;">
+  <div class="bg-white border rounded overflow-hidden">
+
+    <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+      <a href="{% url 'posts:feed' %}" class="text-dark"><i class="bi bi-arrow-left fs-5"></i></a>
+      <h6 class="mb-0 fw-semibold flex-grow-1 text-center">Create story</h6>
+      <span style="width:20px;"></span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="story-form" class="p-3">
+      {% csrf_token %}
+
+      <!-- Live preview card -->
+      <div class="story-create-preview mb-3" id="preview-card" onclick="document.getElementById('story-media').click()" style="cursor:pointer;">
+        <div id="placeholder-state">
+          <div class="text-center">
+            <i class="bi bi-image placeholder-icon d-block mb-2"></i>
+            <div class="text-muted small fw-semibold">Tap to select a photo or video</div>
+          </div>
+        </div>
+        <img id="img-preview" style="display:none;" alt="">
+        <video id="video-preview" style="display:none;" muted autoplay loop playsinline></video>
+
+        <div class="story-caption-overlay" id="caption-overlay" style="display:none;">
+          <input type="text" name="caption" id="caption-input" placeholder="Add a caption…" maxlength="200" onclick="event.stopPropagation()">
+        </div>
+      </div>
+
+      <input type="file" name="media" id="story-media" accept="image/*,video/*" class="d-none" required>
+
+      <!-- Hint row -->
+      <div class="d-flex align-items-center gap-2 text-muted small mb-3 px-1">
+        <i class="bi bi-clock-history"></i>
+        <span>Your story disappears after 24 hours</span>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn-ig-secondary flex-grow-1" onclick="document.getElementById('story-media').click()">
+          <i class="bi bi-arrow-repeat me-1"></i> Change
+        </button>
+        <button type="submit" class="btn-ig-primary flex-grow-1" id="share-btn" disabled>
+          Share to story
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <p class="text-center text-muted small mt-3">Followers will see your story at the top of their feed.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const input = document.getElementById('story-media');
+  const placeholder = document.getElementById('placeholder-state');
+  const imgP = document.getElementById('img-preview');
+  const vidP = document.getElementById('video-preview');
+  const captionOverlay = document.getElementById('caption-overlay');
+  const shareBtn = document.getElementById('share-btn');
+
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+
+    placeholder.style.display = 'none';
+    captionOverlay.style.display = 'block';
+    shareBtn.disabled = false;
+
+    if (file.type.startsWith('video/')) {
+      vidP.src = url; vidP.style.display = 'block'; imgP.style.display = 'none';
+    } else {
+      imgP.src = url; imgP.style.display = 'block'; vidP.style.display = 'none';
+    }
+  });
+</script>
+{% endblock %}

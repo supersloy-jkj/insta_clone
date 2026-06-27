@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}{{ story_user.username }}'s Story · Instaclone{% endblock %}
+
+{% block content %}
+<div class="story-overlay">
+  <div style="position:relative; width:100%; max-width:420px; height:100vh; max-height:740px; background:#000; border-radius:8px; overflow:hidden;">
+
+    <!-- Progress bars -->
+    <div class="story-progress">
+      {% for story in stories %}
+      <div class="story-progress-bar" data-index="{{ forloop.counter0 }}"></div>
+      {% endfor %}
+    </div>
+
+    <!-- Header -->
+    <div class="position-absolute d-flex align-items-center gap-2 p-3" style="top:14px;left:0;right:0;z-index:5;">
+      <img src="{{ story_user.get_profile_picture_url }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;border:1px solid rgba(255,255,255,.3);" alt="">
+      <span class="text-white fw-semibold small">{{ story_user.username }}</span>
+      <span class="text-white-50 small" id="time-ago">{{ stories.0.created_at|timesince }} ago</span>
+      <a href="{% url 'posts:feed' %}" class="text-white ms-auto fs-3 text-decoration-none lh-1">&times;</a>
+    </div>
+
+    {% if is_own_story %}
+    <div class="position-absolute" style="top:50px;right:14px;z-index:5;">
+      {% for story in stories %}
+      <form method="post" action="{% url 'stories:delete' story_id=story.id %}" class="story-delete-form" data-index="{{ forloop.counter0 }}" style="display:none;">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-light" onclick="return confirm('Delete this story?')">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Slides -->
+    <div style="width:100%; height:100%;">
+      {% for story in stories %}
+      <div class="story-slide" data-index="{{ forloop.counter0 }}" style="display:none; width:100%; height:100%; position:relative;">
+        {% if story.media_type == 'video' %}
+        <video src="{{ story.media.url }}" style="width:100%;height:100%;object-fit:contain;background:#000;" autoplay muted playsinline></video>
+        {% else %}
+        <img src="{{ story.media.url }}" style="width:100%;height:100%;object-fit:contain;background:#000;" alt="">
+        {% endif %}
+        {% if story.caption %}
+        <div class="position-absolute bottom-0 start-0 end-0 p-3 text-white text-center" style="background:linear-gradient(transparent, rgba(0,0,0,.6));">
+          {{ story.caption }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Tap zones for prev/next -->
+    <div class="position-absolute top-0 bottom-0 start-0" style="width:30%; z-index:4; cursor:pointer;" onclick="prevSlide()"></div>
+    <div class="position-absolute top-0 bottom-0 end-0" style="width:30%; z-index:4; cursor:pointer;" onclick="nextSlide()"></div>
+
+    {% if is_own_story %}
+    <div class="position-absolute bottom-0 start-0 end-0 d-flex align-items-center gap-2 p-3 text-white" style="z-index:5;">
+      <i class="bi bi-eye-fill"></i>
+      <span class="small" id="view-count-label"></span>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const slides = document.querySelectorAll('.story-slide');
+  const bars = document.querySelectorAll('.story-progress-bar');
+  let current = 0;
+  const DURATION = 5000; // 5s per slide
+  let timer;
+  const viewCounts = [{% for vc in view_counts %}{{ vc }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const viewLabel = document.getElementById('view-count-label');
+
+  function updateViewLabel(i) {
+    if (!viewLabel) return;
+    const n = viewCounts[i] || 0;
+    viewLabel.textContent = n === 1 ? '1 view' : `${n} views`;
+  }
+
+  function showSlide(i) {
+    slides.forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.story-delete-form').forEach(f => f.style.display = 'none');
+    bars.forEach((b, idx) => {
+      b.classList.remove('active');
+      b.style.removeProperty('--dur');
+      if (idx < i) { b.classList.add('done'); b.style.width = ''; }
+      else if (idx > i) { b.classList.remove('done'); b.style.background = 'rgba(255,255,255,.4)'; }
+    });
+
+    if (i >= slides.length) {
+      {% if next_user %}
+      window.location.href = "{% url 'stories:view' username=next_user.username %}";
+      {% else %}
+      window.location.href = "{% url 'posts:feed' %}";
+      {% endif %}
+      return;
+    }
+    if (i < 0) i = 0;
+
+    current = i;
+    slides[current].style.display = 'block';
+    updateViewLabel(current);
+    const delFormEl = document.querySelector(`.story-delete-form[data-index="${current}"]`);
+    if (delFormEl) delFormEl.style.display = 'block';
+
+    const bar = bars[current];
+    bar.classList.add('active');
+    bar.style.setProperty('--dur', DURATION + 'ms');
+
+    clearTimeout(timer);
+    timer = setTimeout(() => showSlide(current + 1), DURATION);
+  }
+
+  function nextSlide() { clearTimeout(timer); showSlide(current + 1); }
+  function prevSlide() { clearTimeout(timer); showSlide(current - 1); }
+
+  showSlide(0);
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Post by {{ post.author.username }} · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap">
+  <div class="bg-white border rounded overflow-hidden">
+    <div class="row g-0" style="min-height: 400px;">
+
+      <!-- Media column -->
+      <div class="col-md-7 bg-black d-flex align-items-center justify-content-center">
+        {% with post.media.all as media_list %}
+        {% if media_list|length > 1 %}
+        <div id="detail-carousel" class="carousel slide w-100" data-bs-ride="false">
+          <div class="carousel-inner">
+            {% for m in media_list %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+              {% if m.media_type == 'video' %}
+              <video src="{{ m.file.url }}" controls class="d-block w-100" style="max-height:70vh;object-fit:contain;"></video>
+              {% else %}
+              <img src="{{ m.file.url }}" class="d-block w-100" style="max-height:70vh;object-fit:contain;" alt="">
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#detail-carousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#detail-carousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>
+        {% elif media_list %}
+        {% with media_list.0 as m %}
+        {% if m.media_type == 'video' %}
+        <video src="{{ m.file.url }}" controls class="w-100" style="max-height:70vh;object-fit:contain;"></video>
+        {% else %}
+        <img src="{{ m.file.url }}" class="w-100" style="max-height:70vh;object-fit:contain;" alt="">
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Right panel: header + comments + actions -->
+      <div class="col-md-5 d-flex flex-column" style="max-height: 70vh;">
+
+        <!-- Post header -->
+        <div class="d-flex align-items-center gap-2 p-3 border-bottom">
+          <a href="{% url 'users:profile' username=post.author.username %}">
+            <img src="{{ post.author.get_profile_picture_url }}" class="post-avatar" alt="">
+          </a>
+          <a href="{% url 'users:profile' username=post.author.username %}" class="fw-semibold text-dark text-decoration-none small flex-grow-1">
+            {{ post.author.username }}
+          </a>
+          {% if post.author == user %}
+          <form method="post" action="{% url 'posts:delete_post' post_id=post.id %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this post?')">Delete</button>
+          </form>
+          {% endif %}
+        </div>
+
+        <!-- Caption + Comments -->
+        <div class="overflow-auto flex-grow-1 p-3" id="comments-section">
+          {% if post.caption %}
+          <div class="d-flex gap-2 mb-3">
+            <a href="{% url 'users:profile' username=post.author.username %}">
+              <img src="{{ post.author.get_profile_picture_url }}" class="post-avatar" alt="">
+            </a>
+            <div>
+              <span class="fw-semibold small">{{ post.author.username }}</span>
+              <span class="small ms-1">{{ post.caption }}</span>
+              <div class="text-muted" style="font-size:.72rem;">{{ post.created_at|timesince }} ago</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Comments list -->
+          <div id="comments-list">
+            {% for comment in comments %}
+            <div class="d-flex gap-2 mb-2">
+              <a href="{% url 'users:profile' username=comment.user.username %}">
+                <img src="{{ comment.user.get_profile_picture_url }}" class="post-avatar" alt="">
+              </a>
+              <div>
+                <span class="fw-semibold small">{{ comment.user.username }}</span>
+                <span class="small ms-1">{{ comment.text }}</span>
+                <div class="text-muted" style="font-size:.72rem;">{{ comment.created_at|timesince }} ago</div>
+                <!-- Replies -->
+                {% for reply in comment.replies.all %}
+                <div class="d-flex gap-2 mt-2 ms-2">
+                  <img src="{{ reply.user.get_profile_picture_url }}" class="post-avatar" alt="">
+                  <div>
+                    <span class="fw-semibold small">{{ reply.user.username }}</span>
+                    <span class="small ms-1">{{ reply.text }}</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% empty %}
+            <p class="text-muted small text-center py-3">No comments yet. Be the first!</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="border-top p-2">
+          <div class="d-flex align-items-center">
+            <button class="btn-icon {% if is_liked %}active{% endif %}" id="like-btn"
+                    onclick="toggleAction('{% url 'posts:like_toggle' post_id=post.id %}', this, 'active', document.getElementById('like-count'))">
+              <i class="bi {% if is_liked %}bi-heart-fill text-danger{% else %}bi-heart{% endif %}"></i>
+            </button>
+            <div class="ms-auto">
+              <button class="btn-icon {% if is_saved %}active{% endif %}" id="save-btn"
+                      onclick="toggleAction('{% url 'posts:save_toggle' post_id=post.id %}', this, 'active', null)">
+                <i class="bi {% if is_saved %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+              </button>
+            </div>
+          </div>
+          <div class="px-2 fw-semibold small" id="like-count">{{ post.like_count }} like{{ post.like_count|pluralize }}</div>
+          <div class="px-2 text-muted" style="font-size:.72rem;">{{ post.created_at|date:"F j, Y" }}</div>
+        </div>
+
+        <!-- Add comment -->
+        <div class="border-top">
+          <form class="d-flex align-items-center gap-2 p-2" id="comment-form">
+            {% csrf_token %}
+            {{ comment_form.text }}
+            <button type="submit" class="text-primary fw-semibold border-0 bg-transparent flex-shrink-0">Post</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // AJAX comment submit
+  document.getElementById('comment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = this.querySelector('input[name=text]');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const fd = new FormData();
+    fd.append('text', text);
+    fd.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+
+    fetch('', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd,
+    }).then(r => r.json()).then(data => {
+      const list = document.getElementById('comments-list');
+      const noComments = list.querySelector('p');
+      if (noComments) noComments.remove();
+
+      const div = document.createElement('div');
+      div.className = 'd-flex gap-2 mb-2';
+      div.innerHTML = `
+        <img src="${data.profile_pic}" class="post-avatar" alt="">
+        <div>
+          <span class="fw-semibold small">${data.username}</span>
+          <span class="small ms-1">${data.text}</span>
+          <div class="text-muted" style="font-size:.72rem;">just now</div>
+        </div>`;
+      list.appendChild(div);
+      input.value = '';
+      list.scrollTop = list.scrollHeight;
+    });
+  });
+</script>
+{% endblock %}

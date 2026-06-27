@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Saved · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap">
+  <h5 class="mb-4 fw-semibold">Saved Posts</h5>
+
+  {% if saved %}
+  <div class="profile-grid">
+    {% for s in saved %}
+    <a href="{% url 'posts:post_detail' post_id=s.post.id %}" class="profile-grid-item">
+      {% with s.post.first_media as media %}
+        {% if media %}
+          {% if media.media_type == 'video' %}
+          <video src="{{ media.file.url }}" muted></video>
+          {% else %}
+          <img src="{{ media.file.url }}" alt="">
+          {% endif %}
+        {% endif %}
+      {% endwith %}
+      <div class="grid-overlay">
+        <span><i class="bi bi-heart-fill"></i> {{ s.post.like_count }}</span>
+        <span><i class="bi bi-chat-fill"></i> {{ s.post.comment_count }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-bookmark fs-1 d-block mb-2"></i>
+    <p class="fw-semibold">No Saved Posts Yet</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

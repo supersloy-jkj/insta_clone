@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ list_type }} · {{ profile_user.username }} · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'users:profile' username=profile_user.username %}" class="text-dark text-decoration-none">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
+    <h5 class="mb-0">{{ list_type }}</h5>
+  </div>
+
+  {% for u in users %}
+  <div class="d-flex align-items-center justify-content-between py-2">
+    <a href="{% url 'users:profile' username=u.username %}" class="d-flex align-items-center gap-3 text-dark text-decoration-none">
+      <img src="{{ u.get_profile_picture_url }}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;" alt="">
+      <div>
+        <div class="fw-semibold small">{{ u.username }}</div>
+        <div class="text-muted" style="font-size:.8rem;">{{ u.follower_count }} followers</div>
+      </div>
+    </a>
+  </div>
+  {% empty %}
+  <div class="text-center text-muted py-5">No {{ list_type|lower }} yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up · Instaclone{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+  <div style="width: 100%; max-width: 380px;">
+
+    <div class="bg-white border rounded p-4 mb-3 text-center">
+      <h1 class="mb-1" style="font-family:'Grand Hotel',cursive;font-size:3.2rem;font-weight:400;">Instaclone</h1>
+      <p class="text-muted mb-4 fw-semibold small">Sign up to see photos from your friends.</p>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-3 text-start">
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary w-100 fw-semibold">Sign Up</button>
+      </form>
+
+      <p class="text-muted small mt-3">
+        By signing up, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+      </p>
+    </div>
+
+    <div class="bg-white border rounded p-3 text-center">
+      Have an account?
+      <a href="{% url 'users:login' %}" class="fw-semibold text-decoration-none">Log in</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

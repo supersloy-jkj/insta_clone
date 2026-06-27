@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Messages · Instaclone{% endblock %}
+
+{% block extra_css %}
+<style>
+  .inbox-wrap {
+    max-width: 700px; margin: 0 auto;
+    background: #fff; border: 1px solid var(--ig-border);
+    border-radius: 4px; min-height: calc(100vh - 60px);
+  }
+  .inbox-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px 14px; border-bottom: 1px solid var(--ig-border);
+  }
+  .inbox-header h5 { font-size: 1rem; font-weight: 700; margin: 0; }
+
+  /* Conversation row */
+  .conv-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 24px; text-decoration: none; color: var(--ig-text);
+    transition: background .1s; cursor: pointer; border: none; background: none; width: 100%;
+  }
+  .conv-row:hover { background: #fafafa; }
+  .conv-row.unread { background: #f5f5f5; }
+
+  .conv-avatar {
+    width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+    flex-shrink: 0; background: #efefef;
+  }
+  .conv-avatar-init {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--ig-gradient-diag); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 1.1rem;
+  }
+
+  .conv-info { flex: 1; min-width: 0; }
+  .conv-username { font-size: .9rem; font-weight: 600; margin-bottom: 2px; }
+  .conv-row.unread .conv-username { font-weight: 700; }
+  .conv-preview {
+    font-size: .82rem; color: var(--ig-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 320px;
+  }
+  .conv-row.unread .conv-preview { color: var(--ig-text); font-weight: 500; }
+  .conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .conv-time { font-size: .72rem; color: var(--ig-muted); }
+  .conv-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ig-blue); }
+
+  /* New message button */
+  .new-msg-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--ig-text); font-size: 1.4rem; padding: 4px;
+    transition: opacity .15s;
+  }
+  .new-msg-btn:hover { opacity: .6; }
+
+  /* Empty state */
+  .inbox-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 20px; text-align: center;
+  }
+  .inbox-empty-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 2px solid var(--ig-text);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; margin-bottom: 16px;
+  }
+
+  /* Search bar */
+  .inbox-search {
+    padding: 10px 24px; border-bottom: 1px solid var(--ig-border);
+  }
+  .inbox-search input {
+    width: 100%; background: #efefef; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: .88rem; outline: none;
+  }
+  .inbox-search input:focus { background: #e8e8e8; }
+
+  /* Section label */
+  .inbox-section {
+    padding: 10px 24px 4px;
+    font-size: .78rem; font-weight: 700; color: var(--ig-text);
+    letter-spacing: .1px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrap" style="padding-top:0; padding-left:0; padding-right:0;">
+<div class="inbox-wrap">
+
+  <!-- Header -->
+  <div class="inbox-header">
+    <div class="d-flex align-items-center gap-2">
+      <span style="font-size:1rem; font-weight:700;">{{ user.username }}</span>
+      <i class="bi bi-chevron-down" style="font-size:.8rem;"></i>
+    </div>
+    <a href="{% url 'users:search' %}" class="new-msg-btn" title="New message">
+      <i class="bi bi-pencil-square"></i>
+    </a>
+  </div>
+
+  <!-- Search -->
+  <div class="inbox-search">
+    <input type="text" placeholder="Search" id="search-input">
+  </div>
+
+  {% if conv_data %}
+  <div class="inbox-section">Messages</div>
+
+  <div id="conv-list">
+    {% for item in conv_data %}
+    <a href="{% url 'messaging:conversation' conv_id=item.conv.id %}"
+       class="conv-row {% if item.unread %}unread{% endif %}">
+
+      <!-- Avatar -->
+      {% if item.other.profile_picture %}
+        <img src="{{ item.other.profile_picture.url }}" class="conv-avatar" alt="{{ item.other.username }}">
+      {% else %}
+        <div class="conv-avatar-init">{{ item.other.username|slice:":2"|upper }}</div>
+      {% endif %}
+
+      <!-- Info -->
+      <div class="conv-info">
+        <div class="conv-username">{{ item.other.username }}</div>
+        <div class="conv-preview">
+          {% if item.last_msg %}
+            {% if item.last_msg.sender == user %}You: {% endif %}
+            {% if item.last_msg.text %}
+              {{ item.last_msg.text }}
+            {% elif item.last_msg.media %}
+              📷 Photo
+            {% else %}
+              Sent a message
+            {% endif %}
+            · {{ item.last_msg.created_at|timesince|truncatewords:2 }}
+          {% else %}
+            Start a conversation
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Meta: time + unread dot -->
+      <div class="conv-meta">
+        {% if item.last_msg %}
+          <span class="conv-time">{{ item.last_msg.created_at|date:"g:i A" }}</span>
+        {% endif %}
+        {% if item.unread %}
+          <span class="conv-dot"></span>
+        {% endif %}
+      </div>
+
+    </a>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="inbox-empty">
+    <div class="inbox-empty-icon">
+      <i class="bi bi-send"></i>
+    </div>
+    <h5 class="fw-semibold mb-1">Your messages</h5>
+    <p class="text-muted small mb-3">Send private photos and messages to a friend or group.</p>
+    <a href="{% url 'users:search' %}" class="btn-ig-primary" style="border-radius:8px; padding:8px 20px; text-decoration:none;">
+      Send message
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Client-side search filter
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.toLowerCase();
+      document.querySelectorAll('.conv-row').forEach(row => {
+        const name = row.querySelector('.conv-username')?.textContent.toLowerCase() || '';
+        row.style.display = name.includes(q) ? '' : 'none';
+      });
+    });
+  }
+</script>
+{% endblock %}

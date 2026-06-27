@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Instaclone{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ig-gradient: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+      --ig-gradient-diag: linear-gradient(45deg, #feda75 0%, #fa7e1e 25%, #d62976 50%, #962fbf 75%, #4f5bd5 100%);
+      --ig-blue: #0095f6;
+      --ig-text: #262626;
+      --ig-muted: #8e8e8e;
+      --ig-border: #dbdbdb;
+      --sidebar-w: 245px;
+      --sidebar-w-collapsed: 72px;
+    }
+    * { box-sizing: border-box; }
+    body { background: #fafafa; color: var(--ig-text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    a { text-decoration: none; }
+
+    /* ── Sidebar nav ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0; width: var(--sidebar-w);
+      height: 100vh; background: #fff; border-right: 1px solid var(--ig-border);
+      padding: 8px 12px 12px; z-index: 100; display: flex; flex-direction: column;
+    }
+    #sidebar .brand {
+      font-family: 'Grand Hotel', cursive; font-size: 2.1rem; font-weight: 400;
+      padding: 23px 12px 29px; color: var(--ig-text); line-height: 1;
+    }
+    .nav-link { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: 8px;
+                color: var(--ig-text); font-size: .95rem; text-decoration: none; transition: background .1s;
+                white-space: nowrap; }
+    .nav-link:hover, .nav-link.active { background: #f0f0f0; color: var(--ig-text); }
+    .nav-link.active { font-weight: 700; }
+    .nav-link i { font-size: 1.5rem; width: 26px; text-align: center; flex-shrink: 0; }
+    .nav-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .nav-link.active .nav-avatar { box-shadow: 0 0 0 1.5px var(--ig-text); }
+
+    /* ── Main content area ── */
+    #main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+    .content-wrap { max-width: 630px; margin: 0 auto; padding: 30px 16px 80px; width: 100%; }
+
+    /* ── Story ring (gradient ring like real IG) ── */
+    .story-ring {
+      border-radius: 50%; padding: 2.5px; background: var(--ig-gradient-diag);
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .story-ring.seen { background: #dbdbdb; }
+    .story-ring-inner { background: #fff; border-radius: 50%; padding: 2px; display: flex; }
+    .story-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block; background: #fafafa; }
+    .story-label { font-size: .72rem; max-width: 66px; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; color: var(--ig-text); }
+
+    /* ── Post card ── */
+    .post-card { background: #fff; border: 1px solid var(--ig-border); border-radius: 3px; margin-bottom: 24px; }
+    .post-header { display: flex; align-items: center; gap: 11px; padding: 14px; }
+    .post-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .post-avatar-ring { padding: 2px; border-radius: 50%; background: var(--ig-gradient-diag); display: inline-flex; }
+    .post-avatar-ring .post-avatar { border: 2px solid #fff; }
+    .post-media { position: relative; background: #000; }
+    .post-media img, .post-media video { width: 100%; max-height: 600px; object-fit: cover; display: block; }
+    .post-actions { padding: 6px 14px 0; display: flex; align-items: center; gap: 2px; }
+    .btn-icon { background: none; border: none; padding: 8px 6px; font-size: 1.55rem; cursor: pointer; color: var(--ig-text); line-height: 1; transition: transform .08s; }
+    .btn-icon:active { transform: scale(0.88); }
+    .btn-icon.active i.bi-heart-fill { color: #ed4956; }
+    .post-likes { font-weight: 600; font-size: .9rem; padding: 4px 14px 2px; }
+    .post-caption { padding: 2px 14px 4px; font-size: .9rem; line-height: 1.4; }
+    .post-caption .username { font-weight: 600; margin-right: 6px; }
+    .view-comments { padding: 0 14px 4px; font-size: .85rem; color: var(--ig-muted); cursor: pointer; text-decoration: none; display: block; }
+    .post-time { padding: 4px 14px 12px; font-size: .68rem; color: var(--ig-muted); text-transform: uppercase; letter-spacing: .2px; }
+    .comment-box { border-top: 1px solid #efefef; padding: 4px 10px; display: flex; gap: 8px; align-items: center; }
+    .comment-box input { flex: 1; border: none; outline: none; font-size: .9rem; background: transparent; padding: 10px 4px; }
+    .comment-box button { background: none; border: none; color: var(--ig-blue); font-weight: 600; font-size: .9rem; cursor: pointer; opacity: .35; }
+    .comment-box button.ready { opacity: 1; }
+
+    /* ── Profile header / grid ── */
+    .profile-avatar-lg { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; }
+    .profile-avatar-lg.has-story { padding: 4px; background: var(--ig-gradient-diag); }
+    .profile-avatar-lg.has-story img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #fff; }
+    .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 3px; }
+    .profile-grid-item { position: relative; aspect-ratio: 1; overflow: hidden; }
+    .profile-grid-item img, .profile-grid-item video { width: 100%; height: 100%; object-fit: cover; }
+    .profile-grid-item:hover .grid-overlay { opacity: 1; }
+    .grid-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.3);
+      display: flex; align-items: center; justify-content: center; gap: 20px;
+      opacity: 0; transition: opacity .15s; color: #fff; font-weight: 600; font-size: .9rem; }
+    .profile-tabs { border-top: 1px solid var(--ig-border); display: flex; justify-content: center; gap: 60px; margin-top: 12px; }
+    .profile-tab { padding: 16px 0; font-size: .72rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+      color: var(--ig-muted); display: flex; align-items: center; gap: 6px; border-top: 1px solid transparent; margin-top: -1px; }
+    .profile-tab.active { color: var(--ig-text); border-top-color: var(--ig-text); }
+
+    /* ── Bottom nav (mobile) ── */
+    #bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid var(--ig-border); padding: 10px 0 8px; z-index: 100; }
+    #bottom-nav .nav-link { flex-direction: column; font-size: .65rem; padding: 2px 8px; border-radius: 0; }
+    #bottom-nav .nav-link:hover, #bottom-nav .nav-link.active { background: transparent; }
+    #bottom-nav .nav-link i { font-size: 1.55rem; }
+
+    @media (max-width: 1000px) {
+      :root { --sidebar-w: var(--sidebar-w-collapsed); }
+      #sidebar .brand { display: none; }
+      #sidebar { align-items: center; }
+      #sidebar .brand::before { content: '📷'; }
+      .nav-link span.nav-text { display: none; }
+      .nav-link { justify-content: center; padding: 14px; }
+    }
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      #main { margin-left: 0; }
+      #bottom-nav { display: flex; justify-content: space-around; }
+      .content-wrap { padding-bottom: 70px; padding-top: 0; }
+      .profile-grid { gap: 2px 2px; }
+    }
+
+    /* ── Story viewer ── */
+    .story-overlay { position: fixed; inset: 0; background: #000; z-index: 200;
+      display: flex; align-items: center; justify-content: center; }
+    .story-progress { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 4px; }
+    .story-progress-bar { flex: 1; height: 2px; background: rgba(255,255,255,.4); border-radius: 2px; overflow: hidden; }
+    .story-progress-bar.done::after { content:''; display:block; width:100%; height:100%; background:#fff; }
+    .story-progress-bar.active::after { content:''; display:block; height:100%; background:#fff; animation: progress var(--dur, 5s) linear forwards; }
+    @keyframes progress { from { width: 0% } to { width: 100% } }
+
+    /* ── Story create / preview card ── */
+    .story-create-preview {
+      position: relative; width: 100%; max-width: 320px; aspect-ratio: 9/16; margin: 0 auto;
+      border-radius: 16px; overflow: hidden; background: linear-gradient(160deg,#fafafa,#efefef);
+      display: flex; align-items: center; justify-content: center; border: 1px solid var(--ig-border);
+    }
+    .story-create-preview img, .story-create-preview video { width: 100%; height: 100%; object-fit: cover; }
+    .story-create-preview .placeholder-icon { font-size: 2.5rem; color: var(--ig-muted); }
+    .story-caption-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 14px;
+      background: linear-gradient(transparent, rgba(0,0,0,.55)); }
+    .story-caption-overlay input { width: 100%; background: transparent; border: none; outline: none;
+      color: #fff; font-size: .95rem; }
+    .story-caption-overlay input::placeholder { color: rgba(255,255,255,.75); }
+
+    /* ── Messages (base styles — conversation.html extends these) ── */
+    .messages-container { height: calc(100vh - 160px); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* ── Buttons (IG-style) ── */
+    .btn-ig-primary { background: var(--ig-blue); color: #fff; border: none; font-weight: 600; font-size: .85rem;
+      padding: 7px 16px; border-radius: 8px; transition: background .1s; }
+    .btn-ig-primary:hover { background: #1877c9; color: #fff; }
+    .btn-ig-secondary { background: #efefef; color: var(--ig-text); border: none; font-weight: 600; font-size: .85rem;
+      padding: 7px 16px; border-radius: 8px; }
+    .btn-ig-secondary:hover { background: #dbdbdb; color: var(--ig-text); }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<!-- ── Sidebar ── -->
+<nav id="sidebar">
+  <a href="{% url 'posts:feed' %}" class="brand">Instaclone</a>
+
+  <a href="{% url 'posts:feed' %}" class="nav-link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">
+    <i class="bi bi-house{% if request.resolver_match.url_name == 'feed' %}-fill{% endif %}"></i> <span class="nav-text">Home</span>
+  </a>
+  <a href="{% url 'users:search' %}" class="nav-link {% if request.resolver_match.url_name == 'search' %}active{% endif %}">
+    <i class="bi bi-search"></i> <span class="nav-text">Search</span>
+  </a>
+  <a href="{% url 'stories:create' %}" class="nav-link {% if request.resolver_match.url_name == 'create' and request.resolver_match.app_name == 'stories' %}active{% endif %}">
+    <i class="bi bi-plus-square-dotted"></i> <span class="nav-text">Stories</span>
+  </a>
+  <a href="{% url 'posts:create_post' %}" class="nav-link {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}">
+    <i class="bi bi-plus-square{% if request.resolver_match.url_name == 'create_post' %}-fill{% endif %}"></i> <span class="nav-text">Create</span>
+  </a>
+  <a href="{% url 'messaging:inbox' %}" class="nav-link {% if request.resolver_match.app_name == 'messaging' %}active{% endif %}">
+    <i class="bi bi-chat{% if request.resolver_match.app_name == 'messaging' %}-fill{% endif %}"></i> <span class="nav-text">Messages</span>
+  </a>
+  <a href="{% url 'posts:saved_posts' %}" class="nav-link {% if request.resolver_match.url_name == 'saved_posts' %}active{% endif %}">
+    <i class="bi bi-bookmark{% if request.resolver_match.url_name == 'saved_posts' %}-fill{% endif %}"></i> <span class="nav-text">Saved</span>
+  </a>
+  <a href="{% url 'users:profile' username=user.username %}" class="nav-link {% if request.resolver_match.url_name == 'profile' and profile_user == user %}active{% endif %}">
+    <img src="{{ user.get_profile_picture_url }}" class="nav-avatar" alt=""> <span class="nav-text">Profile</span>
+  </a>
+  <div class="mt-auto">
+    <a href="{% url 'users:logout' %}" class="nav-link text-danger">
+      <i class="bi bi-box-arrow-left"></i> <span class="nav-text">Log out</span>
+    </a>
+  </div>
+</nav>
+
+<!-- ── Bottom nav (mobile) ── -->
+<nav id="bottom-nav">
+  <a href="{% url 'posts:feed' %}" class="nav-link"><i class="bi bi-house-fill"></i></a>
+  <a href="{% url 'users:search' %}" class="nav-link"><i class="bi bi-search"></i></a>
+  <a href="{% url 'posts:create_post' %}" class="nav-link"><i class="bi bi-plus-square"></i></a>
+  <a href="{% url 'messaging:inbox' %}" class="nav-link"><i class="bi bi-chat"></i></a>
+  <a href="{% url 'users:profile' username=user.username %}" class="nav-link">
+    <img src="{{ user.get_profile_picture_url }}" class="nav-avatar" style="width:24px;height:24px;" alt="">
+  </a>
+</nav>
+{% endif %}
+
+<!-- ── Main ── -->
+<div id="main">
+  {% if messages %}
+  <div class="position-fixed top-0 end-0 p-3" style="z-index:999">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // CSRF helper for AJAX
+  function getCookie(name) {
+    let v = null;
+    document.cookie.split(';').forEach(c => {
+      c = c.trim();
+      if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+    });
+    return v;
+  }
+  const CSRF = getCookie('csrftoken');
+
+  // Generic like/save toggle
+  function toggleAction(url, btn, activeClass, countEl) {
+    fetch(url, { method: 'POST', headers: { 'X-CSRFToken': CSRF } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.is_liked !== undefined) {
+          btn.classList.toggle(activeClass, data.is_liked);
+          if (countEl) countEl.textContent = data.like_count + (data.like_count === 1 ? ' like' : ' likes');
+        }
+        if (data.is_saved !== undefined) {
+          btn.classList.toggle(activeClass, data.is_saved);
+        }
+        if (data.is_following !== undefined) {
+          btn.textContent = data.is_following ? 'Following' : 'Follow';
+          btn.classList.toggle('btn-outline-secondary', data.is_following);
+          btn.classList.toggle('btn-primary', !data.is_following);
+          document.querySelectorAll('.follower-count').forEach(el => {
+            el.textContent = data.follower_count;
+          });
+        }
+      });
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

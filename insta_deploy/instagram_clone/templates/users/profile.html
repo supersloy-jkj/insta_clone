@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile_user.username }} · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap" style="max-width: 935px;">
+
+  <!-- Profile header -->
+  <div class="d-flex align-items-center gap-5 mb-4 px-3 px-md-0 flex-column flex-md-row text-center text-md-start">
+    <!-- Avatar -->
+    <div class="flex-shrink-0">
+      {% if has_active_stories %}
+      <a href="{% url 'stories:view' username=profile_user.username %}" class="d-inline-block">
+        <div class="profile-avatar-lg has-story">
+          <img src="{{ profile_user.get_profile_picture_url }}" alt="{{ profile_user.username }}">
+        </div>
+      </a>
+      {% else %}
+      <img src="{{ profile_user.get_profile_picture_url }}" class="profile-avatar-lg" alt="{{ profile_user.username }}">
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="flex-grow-1 w-100">
+      <div class="d-flex align-items-center gap-3 mb-4 flex-wrap justify-content-center justify-content-md-start">
+        <h2 class="mb-0 fs-5 fw-normal">{{ profile_user.username }}</h2>
+
+        {% if is_own_profile %}
+          <a href="{% url 'users:edit_profile' %}" class="btn-ig-secondary">Edit profile</a>
+          <a href="{% url 'stories:create' %}" class="btn-ig-secondary d-flex align-items-center gap-1">
+            <i class="bi bi-plus-circle"></i> Add story
+          </a>
+        {% else %}
+          <button id="follow-btn"
+            class="{% if is_following %}btn-ig-secondary{% else %}btn-ig-primary{% endif %}"
+            onclick="toggleAction('{% url 'users:follow_toggle' username=profile_user.username %}', this, 'following', null)">
+            {% if is_following %}Following{% else %}Follow{% endif %}
+          </button>
+          <a href="{% url 'messaging:new_conversation' username=profile_user.username %}" class="btn-ig-secondary">Message</a>
+        {% endif %}
+      </div>
+
+      <!-- Stats -->
+      <div class="d-flex gap-4 mb-3 justify-content-center justify-content-md-start" style="font-size:.95rem;">
+        <div><strong>{{ profile_user.post_count }}</strong> post{{ profile_user.post_count|pluralize }}</div>
+        <a href="{% url 'users:followers' username=profile_user.username %}" class="text-dark">
+          <strong class="follower-count">{{ profile_user.follower_count }}</strong> followers
+        </a>
+        <a href="{% url 'users:following' username=profile_user.username %}" class="text-dark">
+          <strong>{{ profile_user.following_count }}</strong> following
+        </a>
+      </div>
+
+      <!-- Bio -->
+      {% if profile_user.bio %}
+        <div style="white-space: pre-line; font-size: .9rem;">{{ profile_user.bio }}</div>
+      {% endif %}
+      {% if profile_user.website %}
+        <a href="{{ profile_user.website }}" target="_blank" class="fw-semibold" style="font-size:.9rem; color:#00376b;">
+          <i class="bi bi-link-45deg"></i>{{ profile_user.website }}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs">
+    <div class="profile-tab active"><i class="bi bi-grid-3x3"></i> Posts</div>
+    <div class="profile-tab"><i class="bi bi-bookmark"></i> Saved</div>
+    <div class="profile-tab"><i class="bi bi-person-bounding-box"></i> Tagged</div>
+  </div>
+
+  <!-- Post grid -->
+  {% if posts %}
+  <div class="profile-grid mt-1">
+    {% for post in posts %}
+    <a href="{% url 'posts:post_detail' post_id=post.id %}" class="profile-grid-item">
+      {% with post.first_media as media %}
+        {% if media %}
+          {% if media.media_type == 'video' %}
+          <video src="{{ media.file.url }}" muted></video>
+          {% else %}
+          <img src="{{ media.file.url }}" alt="">
+          {% endif %}
+        {% endif %}
+      {% endwith %}
+      {% if post.media_count > 1 %}
+      <i class="bi bi-collection-fill position-absolute" style="top:8px; right:8px; color:#fff; font-size:1rem; filter: drop-shadow(0 0 2px rgba(0,0,0,.5));"></i>
+      {% endif %}
+      <div class="grid-overlay">
+        <span><i class="bi bi-heart-fill"></i> {{ post.like_count }}</span>
+        <span><i class="bi bi-chat-fill"></i> {{ post.comment_count }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <div class="d-inline-flex align-items-center justify-content-center rounded-circle border mb-3" style="width:80px;height:80px;">
+      <i class="bi bi-camera fs-1 text-dark"></i>
+    </div>
+    <p class="fw-bold fs-4 mb-1">No Posts Yet</p>
+    {% if is_own_profile %}
+    <a href="{% url 'posts:create_post' %}" class="text-decoration-none" style="color:#00376b;font-weight:600;">Share your first photo</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

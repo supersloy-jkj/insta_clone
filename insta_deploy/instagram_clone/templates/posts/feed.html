@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% block title %}Home · Instaclone{% endblock %}
+
+{% block content %}
+<div class="content-wrap">
+
+  <!-- ── Stories bar ── -->
+  {% if story_users or has_own_story %}
+  <div class="bg-white border rounded mb-4 p-3">
+    <div class="d-flex gap-3 overflow-auto" style="scrollbar-width:none;">
+
+      <!-- Your own story -->
+      <div class="text-center flex-shrink-0">
+        {% if has_own_story %}
+        <a href="{% url 'stories:view' username=user.username %}" class="story-ring d-inline-block">
+          <div class="story-ring-inner">
+            <img src="{{ user.get_profile_picture_url }}" class="story-avatar" alt="">
+          </div>
+        </a>
+        {% else %}
+        <a href="{% url 'stories:create' %}" class="d-inline-block position-relative">
+          <img src="{{ user.get_profile_picture_url }}" class="story-avatar" style="border:1px solid #dbdbdb;" alt="">
+          <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:20px;height:20px;font-size:.8rem;border:3px solid #fff;"><i class="bi bi-plus-lg"></i></span>
+        </a>
+        {% endif %}
+        <div class="story-label fw-semibold">Your story</div>
+      </div>
+
+      <!-- Others' stories -->
+      {% for su in story_users %}
+      <div class="text-center flex-shrink-0">
+        <a href="{% url 'stories:view' username=su.username %}" class="story-ring d-inline-block">
+          <div class="story-ring-inner">
+            <img src="{{ su.get_profile_picture_url }}" class="story-avatar" alt="">
+          </div>
+        </a>
+        <div class="story-label">{{ su.username }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Posts ── -->
+  {% for post in page_obj %}
+  <div class="post-card" id="post-{{ post.id }}">
+
+    <!-- Header -->
+    <div class="post-header">
+      <a href="{% url 'users:profile' username=post.author.username %}">
+        <img src="{{ post.author.get_profile_picture_url }}" class="post-avatar" alt="">
+      </a>
+      <div class="flex-grow-1">
+        <a href="{% url 'users:profile' username=post.author.username %}" class="fw-semibold text-dark text-decoration-none small">
+          {{ post.author.username }}
+        </a>
+      </div>
+      {% if post.author == user %}
+      <form method="post" action="{% url 'posts:delete_post' post_id=post.id %}" class="d-inline">
+        {% csrf_token %}
+        <button class="btn-icon text-muted" style="font-size:1.2rem;" onclick="return confirm('Delete post?')">
+          <i class="bi bi-three-dots"></i>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Media (carousel if multiple) -->
+    {% with post.media.all as media_list %}
+    {% if media_list|length > 1 %}
+    <div id="carousel-{{ post.id }}" class="carousel slide post-media" data-bs-ride="false">
+      <div class="carousel-inner">
+        {% for m in media_list %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+          {% if m.media_type == 'video' %}
+          <video src="{{ m.file.url }}" controls></video>
+          {% else %}
+          <img src="{{ m.file.url }}" alt="">
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ post.id }}" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ post.id }}" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+    {% elif media_list %}
+    <div class="post-media">
+      {% with media_list.0 as m %}
+      {% if m.media_type == 'video' %}
+      <video src="{{ m.file.url }}" controls></video>
+      {% else %}
+      <img src="{{ m.file.url }}" alt="" loading="lazy">
+      {% endif %}
+      {% endwith %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Actions -->
+    <div class="post-actions">
+      <button class="btn-icon {% if post.id in liked_ids %}active{% endif %}"
+              id="like-btn-{{ post.id }}"
+              onclick="toggleAction('{% url 'posts:like_toggle' post_id=post.id %}', this, 'active', document.getElementById('like-count-{{ post.id }}'))">
+        <i class="bi {% if post.id in liked_ids %}bi-heart-fill text-danger{% else %}bi-heart{% endif %}"></i>
+      </button>
+      <a href="{% url 'posts:post_detail' post_id=post.id %}" class="btn-icon text-dark">
+        <i class="bi bi-chat"></i>
+      </a>
+      <div class="ms-auto">
+        <button class="btn-icon {% if post.id in saved_ids %}active{% endif %}"
+                id="save-btn-{{ post.id }}"
+                onclick="toggleAction('{% url 'posts:save_toggle' post_id=post.id %}', this, 'active', null)">
+          <i class="bi {% if post.id in saved_ids %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Likes -->
+    <div class="post-likes" id="like-count-{{ post.id }}">{{ post.like_count }} like{{ post.like_count|pluralize }}</div>
+
+    <!-- Caption -->
+    {% if post.caption %}
+    <div class="post-caption">
+      <span class="username">{{ post.author.username }}</span>{{ post.caption }}
+    </div>
+    {% endif %}
+
+    <!-- Comments preview -->
+    {% with post.comments.count as cnt %}
+    {% if cnt %}
+    <a href="{% url 'posts:post_detail' post_id=post.id %}" class="view-comments">
+      View all {{ cnt }} comment{{ cnt|pluralize }}
+    </a>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Timestamp -->
+    <div class="post-time">{{ post.created_at|timesince }} ago</div>
+
+    <!-- Quick comment form -->
+    <div class="comment-box">
+      <form class="d-flex gap-2 w-100 quick-comment-form" data-post-id="{{ post.id }}">
+        {% csrf_token %}
+        <input type="text" placeholder="Add a comment..." class="comment-input" autocomplete="off">
+        <button type="submit" class="text-primary fw-semibold border-0 bg-transparent">Post</button>
+      </form>
+    </div>
+
+  </div>
+  {% empty %}
+  <div class="text-center py-5">
+    <i class="bi bi-camera fs-1 d-block mb-3 text-muted"></i>
+    <h5>Your feed is empty</h5>
+    <p class="text-muted">Follow people to see their photos and videos here.</p>
+    <a href="{% url 'users:search' %}" class="btn btn-primary">Find People</a>
+  </div>
+  {% endfor %}
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="d-flex justify-content-center gap-2 mt-3">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-secondary btn-sm">← Newer</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-secondary btn-sm">Older →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Quick comment submit via AJAX
+  document.querySelectorAll('.quick-comment-form').forEach(form => {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const postId = form.dataset.postId;
+      const input = form.querySelector('.comment-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const fd = new FormData();
+      fd.append('text', text);
+      fd.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+
+      fetch(`/post/${postId}/`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd,
+      }).then(r => r.json()).then(() => {
+        input.value = '';
+        // Update comment count link
+        const link = document.querySelector(`#post-${postId} .view-comments`);
+        if (link) {
+          const m = link.textContent.match(/\d+/);
+          if (m) {
+            const n = parseInt(m[0]) + 1;
+            link.textContent = `View all ${n} comments`;
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
